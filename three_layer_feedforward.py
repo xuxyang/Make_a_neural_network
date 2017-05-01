@@ -1,5 +1,5 @@
+import numpy as np
 from numpy import exp, array, random, dot
-
 
 class NeuralNetwork():
     def __init__(self, layer_number):
@@ -16,7 +16,7 @@ class NeuralNetwork():
             self.synaptic_weights.append(2 * random.random((3, 3)) - 1)
 
         self.synaptic_weights.append(2 * random.random((3, 1)) - 1)
- 
+
 
     # The Sigmoid function, which describes an S shaped curve.
     # We pass the weighted sum of the inputs through this function to
@@ -33,35 +33,58 @@ class NeuralNetwork():
     # We train the neural network through a process of trial and error.
     # Adjusting the synaptic weights each time.
     def train(self, training_set_inputs, training_set_outputs, number_of_training_iterations):
-        learning_rate = 0.00001
+        learning_rate = 0.0001
         for iteration in range(number_of_training_iterations):
             # Pass the training set through our neural network (a single neuron).
-            output = self.think(training_set_inputs)
-
+            outputs = self.think(training_set_inputs)
+            
             # Calculate the error (The difference between the desired output
             # and the predicted output).
-            error = training_set_outputs - output
+            error = training_set_outputs - outputs[2].T
+            delta_last = np.sum((-1) * error * self.__sigmoid_derivative(outputs[2]))
+            adjust_last = learning_rate * dot(outputs[1], error * (self.__sigmoid_derivative(outputs[2])).T)
+##            print("delta_last:")
+##            print(delta_last)
+##            print("adjust_last:")
+##            print(adjust_last)
 
-            # Multiply the error by the input and again by the gradient of the Sigmoid curve.
-            # This means less confident weights are adjusted more.
-            # This means inputs, which are zero, do not cause changes to the weights.
-            adjustment = dot(training_set_inputs.T, error * self.__sigmoid_derivative(output))
+            delta_second_last = np.sum(np.sum(delta_last * self.synaptic_weights[2]) * self.__sigmoid_derivative(outputs[1]), axis = 1)
+            adjust_second_last = (-1) * learning_rate * dot(outputs[0], np.sum(delta_last * self.synaptic_weights[2]) * (self.__sigmoid_derivative(outputs[1])).T)
+##            print("delta_second_last:")
+##            print(delta_second_last)
+##            print("adjust_second_last:")
+##            print(adjust_second_last)
 
-            # Adjust the weights.
-            self.synaptic_weights += adjustment
+            delta_third_last = dot(delta_second_last, self.synaptic_weights[1]) * np.sum(self.__sigmoid_derivative(outputs[0]), axis = 1)
+            adjust_third_last = (-1) * learning_rate * dot(training_set_inputs.T, dot(delta_second_last, self.synaptic_weights[1]) * (self.__sigmoid_derivative(outputs[0])).T)
+##            print("delta_third_last:")
+##            print(delta_third_last)
+##            print("adjust_third_last")
+##            print(adjust_third_last)
+
+            self.synaptic_weights[0] += adjust_third_last
+            self.synaptic_weights[1] += adjust_second_last
+            self.synaptic_weights[2] += adjust_last
+
+##            # Multiply the error by the input and again by the gradient of the Sigmoid curve.
+##            # This means less confident weights are adjusted more.
+##            # This means inputs, which are zero, do not cause changes to the weights.
+##            adjustment = dot(training_set_inputs.T, error * self.__sigmoid_derivative(output))
+##
+##            # Adjust the weights.
+##            self.synaptic_weights += adjustment
 
     # The neural network thinks.
     def think(self, inputs):
-        hidden_inputs = []
-        # Pass inputs through our neural network.
-        for i in range(self.layer_number - 1):
-            if i == 0:
-                hidden_layer_inputs = inputs
-            else:
-                hidden_layer_inputs = []                   
-            for j in range(len(inputs)):
-                hidden_layer_inputs.append(self.__sigmoid(dot(hidden_layer_inputs, self.synaptic_weights[i][j])))
-        return self.__sigmoid(dot(inputs, self.synaptic_weights))
+        all_outputs = []
+        hidden_inputs = inputs
+        for i in range(self.layer_number):
+            # Pass inputs through our neural network.
+            hidden_outputs = self.__sigmoid(dot(hidden_inputs, self.synaptic_weights[i]))
+            all_outputs.append(hidden_outputs.T)
+            hidden_inputs = hidden_outputs
+        
+        return all_outputs
 
 
 if __name__ == "__main__":
@@ -70,9 +93,9 @@ if __name__ == "__main__":
     layer_number = 3
     neural_network = NeuralNetwork(layer_number)
 
-    print("Random starting synaptic weights: ")
-    for i in range(layer_number):
-        print(neural_network.synaptic_weights[i])
+    print("Random starting weights: ")
+    print(neural_network.synaptic_weights)
+    #print(neural_network.last_weights)
     
     # The training set. We have 4 examples, each consisting of 3 input values
     # and 1 output value.
@@ -83,10 +106,11 @@ if __name__ == "__main__":
     # Do it 10,000 times and make small adjustments each time.
     neural_network.train(training_set_inputs, training_set_outputs, 10000)
 
-    print("New synaptic weights after training: ")
-    for i in range(layer_number):
-        print(neural_network.synaptic_weights[i])
+    print("New weights after training: ")
+    print(neural_network.synaptic_weights)
+    #print(neural_network.last_weights)
 
     # Test the neural network with a new situation.
     print("Considering new situation [1, 0, 0] -> ?: ")
     print(neural_network.think(array([1, 0, 0])))
+    
