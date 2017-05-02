@@ -33,7 +33,7 @@ class NeuralNetwork():
     # We train the neural network through a process of trial and error.
     # Adjusting the synaptic weights each time.
     def train(self, training_set_inputs, training_set_outputs, number_of_training_iterations):
-        learning_rate = 0.0001
+        learning_rate = 1
         for iteration in range(number_of_training_iterations):
             # Pass the training set through our neural network (a single neuron).
             outputs = self.think(training_set_inputs)
@@ -41,12 +41,13 @@ class NeuralNetwork():
             # Calculate the error (The difference between the desired output
             # and the predicted output).
             error = training_set_outputs - outputs[2].T
-            delta_last = np.sum((-1) * error * self.__sigmoid_derivative(outputs[2]))
-            adjust_last = learning_rate * dot(outputs[1], error * (self.__sigmoid_derivative(outputs[2])).T)
-##            print("delta_last:")
-##            print(delta_last)
-##            print("adjust_last:")
-##            print(adjust_last)
+            print(error)
+            delta_last = error * (self.__sigmoid_derivative(outputs[2])).T
+            adjust_last = learning_rate * dot(outputs[1], delta_last)
+            print("delta_last:")
+            print(delta_last)
+            print("adjust_last:")
+            print(adjust_last)
 
             delta_second_last = np.sum(np.sum(delta_last * self.synaptic_weights[2]) * self.__sigmoid_derivative(outputs[1]), axis = 1)
             adjust_second_last = (-1) * learning_rate * dot(outputs[0], np.sum(delta_last * self.synaptic_weights[2]) * (self.__sigmoid_derivative(outputs[1])).T)
@@ -104,7 +105,7 @@ if __name__ == "__main__":
 
     # Train the neural network using a training set.
     # Do it 10,000 times and make small adjustments each time.
-    neural_network.train(training_set_inputs, training_set_outputs, 10000)
+    neural_network.train(training_set_inputs, training_set_outputs, 1)
 
     print("New weights after training: ")
     print(neural_network.synaptic_weights)
