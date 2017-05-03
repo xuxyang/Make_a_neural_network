@@ -32,48 +32,31 @@ class NeuralNetwork():
 
     # We train the neural network through a process of trial and error.
     # Adjusting the synaptic weights each time.
+    # Coded according to https://en.wikipedia.org/wiki/Backpropagation
     def train(self, training_set_inputs, training_set_outputs, number_of_training_iterations):
-        learning_rate = 1
+        learning_rate = 0.1
         for iteration in range(number_of_training_iterations):
-            # Pass the training set through our neural network (a single neuron).
+
             outputs = self.think(training_set_inputs)
             
-            # Calculate the error (The difference between the desired output
-            # and the predicted output).
-            error = training_set_outputs - outputs[2].T
-            print(error)
-            delta_last = error * (self.__sigmoid_derivative(outputs[2])).T
+            error_last = training_set_outputs - outputs[2].T
+            delta_last = error_last * self.__sigmoid_derivative(outputs[2].T)
             adjust_last = learning_rate * dot(outputs[1], delta_last)
-            print("delta_last:")
-            print(delta_last)
-            print("adjust_last:")
-            print(adjust_last)
 
-            delta_second_last = np.sum(np.sum(delta_last * self.synaptic_weights[2]) * self.__sigmoid_derivative(outputs[1]), axis = 1)
-            adjust_second_last = (-1) * learning_rate * dot(outputs[0], np.sum(delta_last * self.synaptic_weights[2]) * (self.__sigmoid_derivative(outputs[1])).T)
-##            print("delta_second_last:")
-##            print(delta_second_last)
-##            print("adjust_second_last:")
-##            print(adjust_second_last)
+            error_second_last = dot(delta_last, self.synaptic_weights[2].T)
+            delta_second_last = error_second_last * self.__sigmoid_derivative(outputs[1].T)
+            adjust_second_last = learning_rate * dot(outputs[0], delta_second_last)
 
-            delta_third_last = dot(delta_second_last, self.synaptic_weights[1]) * np.sum(self.__sigmoid_derivative(outputs[0]), axis = 1)
-            adjust_third_last = (-1) * learning_rate * dot(training_set_inputs.T, dot(delta_second_last, self.synaptic_weights[1]) * (self.__sigmoid_derivative(outputs[0])).T)
-##            print("delta_third_last:")
-##            print(delta_third_last)
-##            print("adjust_third_last")
-##            print(adjust_third_last)
+
+            error_third_last = dot(delta_second_last, self.synaptic_weights[1].T)
+            delta_third_last = error_third_last * self.__sigmoid_derivative(outputs[0].T)
+            adjust_third_last = learning_rate * dot(training_set_inputs.T, delta_third_last)
 
             self.synaptic_weights[0] += adjust_third_last
             self.synaptic_weights[1] += adjust_second_last
             self.synaptic_weights[2] += adjust_last
 
-##            # Multiply the error by the input and again by the gradient of the Sigmoid curve.
-##            # This means less confident weights are adjusted more.
-##            # This means inputs, which are zero, do not cause changes to the weights.
-##            adjustment = dot(training_set_inputs.T, error * self.__sigmoid_derivative(output))
-##
-##            # Adjust the weights.
-##            self.synaptic_weights += adjustment
+
 
     # The neural network thinks.
     def think(self, inputs):
@@ -105,7 +88,7 @@ if __name__ == "__main__":
 
     # Train the neural network using a training set.
     # Do it 10,000 times and make small adjustments each time.
-    neural_network.train(training_set_inputs, training_set_outputs, 1)
+    neural_network.train(training_set_inputs, training_set_outputs, 10000)
 
     print("New weights after training: ")
     print(neural_network.synaptic_weights)
@@ -113,5 +96,5 @@ if __name__ == "__main__":
 
     # Test the neural network with a new situation.
     print("Considering new situation [1, 0, 0] -> ?: ")
-    print(neural_network.think(array([1, 0, 0])))
+    print(neural_network.think(array([1, 0, 0]))[2])
     
